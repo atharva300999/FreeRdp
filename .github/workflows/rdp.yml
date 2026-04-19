@@ -1,36 +1,35 @@
-name: Free Windows RDP - Madara Fixed v2026
+name: Free RDP - Madara Cloudflare Style 2026
 
-on: [workflow_dispatch, push]
+on: [workflow_dispatch]
 
 jobs:
-  build:
+  rdp:
     runs-on: windows-latest
     timeout-minutes: 9999
 
     steps:
-      - name: Enable Remote Desktop
+      - name: Enable RDP & Create User
         run: |
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          net user admin Madara@2026RDP! /add
-          net localgroup administrators admin /add
-          reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoAdminLogon /t REG_SZ /d 1 /f
+          net user MadaraRDP P@ssw0rd2026! /add
+          net localgroup administrators MadaraRDP /add
 
-      - name: Download Latest Ngrok v3
+      - name: Install Cloudflared
         run: |
-          Invoke-WebRequest -Uri https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
-          Expand-Archive ngrok.zip -DestinationPath ngrok
+          Invoke-WebRequest -Uri https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
 
-      - name: Start Ngrok Tunnel
+      - name: Start Cloudflare Tunnel for RDP
         run: |
-          .\ngrok\ngrok.exe authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
-          Start-Process .\ngrok\ngrok.exe -ArgumentList "tcp 3389" -NoNewWindow -PassThru
+          Start-Process .\cloudflared.exe -ArgumentList "tunnel --url tcp://localhost:3389" -NoNewWindow -PassThru
 
-      - name: Keep RDP Alive & Print Info
+      - name: Keep Alive & Show Credentials
         run: |
           Write-Host "========================================"
-          Write-Host "RDP READY! Username: admin"
-          Write-Host "Password: Madara@2026RDP!"
-          Write-Host "Wait 1-2 min for Ngrok URL in logs..."
+          Write-Host "✅ RDP READY!"
+          Write-Host "Username: MadaraRDP"
+          Write-Host "Password: P@ssw0rd2026!"
+          Write-Host "Cloudflare Tunnel running... Check logs for tunnel URL"
+          Write-Host "Use any RDP client with the tunnel address shown below"
           Write-Host "========================================"
           while ($true) { Start-Sleep -Seconds 300 }
